@@ -9,20 +9,20 @@ type Dot = {
 export const DotsGrid = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const mouse = useRef({ x: 0, y: 0 });
+  const mouse = useRef({ x: -9999, y: -9999 });
   const spacing = 40;
   const dotRadius = 2;
   const maxRadius = 6;
-  const dots: Dot[] = [];
+  const animationFrameId = useRef<number | undefined>(undefined);
+  const dots = useRef<Dot[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    let animationFrameId: number;
 
     const generateDots = () => {
       const cols = Math.floor(canvas.width / spacing);
@@ -30,7 +30,7 @@ export const DotsGrid = () => {
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          dots.push({
+          dots.current.push({
             x: x * spacing + spacing / 2,
             y: y * spacing + spacing / 2,
             baseRadius: dotRadius,
@@ -40,9 +40,8 @@ export const DotsGrid = () => {
     };
 
     const resizeCanvas = () => {
-      if (!containerRef.current) return;
-      canvas.width = containerRef.current.offsetWidth;
-      canvas.height = containerRef.current.offsetHeight;
+      canvas.width = container.offsetWidth;
+      canvas.height = container.offsetHeight;
       generateDots();
     };
 
@@ -58,15 +57,15 @@ export const DotsGrid = () => {
         mouse.current.x = e.clientX - bounds.left;
         mouse.current.y = e.clientY - bounds.top;
       } else {
-        mouse.current.x = 0;
-        mouse.current.y = 0;
+        mouse.current.x = -9999;
+        mouse.current.y = -9999;
       }
     };
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      for (const dot of dots) {
+      for (const dot of dots.current) {
         const dx = dot.x - mouse.current.x;
         const dy = dot.y - mouse.current.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -82,34 +81,34 @@ export const DotsGrid = () => {
         ctx.fill();
       }
 
-      animationFrameId = requestAnimationFrame(draw);
+      animationFrameId.current = requestAnimationFrame(draw);
     };
 
     resizeCanvas();
     draw();
-    containerRef.current?.addEventListener("resize", resizeCanvas);
-    containerRef.current?.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("resize", resizeCanvas);
+    container.addEventListener("mousemove", handleMouseMove);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      containerRef.current?.removeEventListener("resize", resizeCanvas);
-      containerRef.current?.removeEventListener("mousemove", handleMouseMove);
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+      window.removeEventListener("resize", resizeCanvas);
+      container.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
 
   return (
-    <div ref={containerRef}>
-      <canvas
-        ref={canvasRef}
-        style={{
-          display: "block",
-          background: "#0d0d0d",
-          //   position: "fixed",
-          top: 0,
-          left: 0,
-          zIndex: -1,
-        }}
-      />
+    <div
+      ref={containerRef}
+      style={{
+        flexGrow: 1,
+        width: "100%",
+        height: "100%",
+        background: "#0d0d0d",
+      }}
+    >
+      <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 };
