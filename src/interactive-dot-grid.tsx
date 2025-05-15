@@ -22,15 +22,14 @@ type DotRef = RefObject<HTMLDivElement | null>;
 export const InteractiveDotGrid = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  console.log(dimensions);
-
   const [dots, setDots] = useState<Dot[]>([]);
 
   const animationRef = useRef<number | undefined>(undefined);
   const mousePositionRef = useRef({ x: 0, y: 0 });
   const dotRefs = useRef<DotRef[]>([]);
   const spacing = 40;
+  const maxRadius = 150;
+  const pushFactor = 30;
 
   // Generate dots based on container dimensions
   const generateDots = useCallback(() => {
@@ -42,8 +41,6 @@ export const InteractiveDotGrid = () => {
     const rows = Math.floor(containerRect.height / spacing);
 
     console.log({ cols, rows });
-
-    setDimensions({ width: containerRect.width, height: containerRect.height });
 
     const newDots: Dot[] = [];
     for (let row = 0; row < rows; row++) {
@@ -102,7 +99,6 @@ export const InteractiveDotGrid = () => {
       return;
 
     const { x: mouseX, y: mouseY } = mousePositionRef.current;
-    const maxRadius = 150;
 
     for (const dotRef of dotRefs.current) {
       if (!dotRef.current) return;
@@ -118,7 +114,7 @@ export const InteractiveDotGrid = () => {
 
       if (distance < maxRadius) {
         // Calculate push strength (stronger when closer)
-        const strength = (1 - distance / maxRadius) * 30;
+        const strength = (1 - distance / maxRadius) * pushFactor;
 
         // Check if distance is not zero to avoid division by zero
         if (distance > 0) {
@@ -126,8 +122,12 @@ export const InteractiveDotGrid = () => {
           const moveX = (-distX / distance) * strength;
           const moveY = (-distY / distance) * strength;
 
-          // Apply transform
-          dotEl.style.transform = `translate(${moveX}px, ${moveY}px)`;
+          // Apply animation class
+          dotEl.classList.add(styles.animateDot);
+
+          // Store the target position as CSS variables
+          dotEl.style.setProperty("--target-x", `${moveX}px`);
+          dotEl.style.setProperty("--target-y", `${moveY}px`);
 
           // Change color based on distance
           const intensity = Math.min(1, (1 - distance / maxRadius) * 2);
@@ -139,8 +139,8 @@ export const InteractiveDotGrid = () => {
           })`;
         }
       } else {
-        // Return to original position
-        dotEl.style.transform = "translate(0px, 0px)";
+        // If dot was previously animated, remove the class
+        dotEl.classList.remove(styles.animateDot);
         dotEl.style.backgroundColor = "rgba(66, 130, 81, 0.5)";
       }
     }
@@ -162,37 +162,14 @@ export const InteractiveDotGrid = () => {
   console.log(dots);
 
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        background: "#0d0d0d",
-        overflow: "hidden",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: "6xl",
-          height: "100%",
-        }}
-      >
+    <div className={styles.container}>
+      <div className={styles.innerContainer}>
         <div
           ref={containerRef}
-          className="dots-container"
+          className={styles.dotsContainer}
           style={{
-            width: "100%",
-            height: "100%",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, 40px)",
-            gridTemplateRows: "repeat(auto-fill, 40px)",
-            justifyContent: "center",
-            alignItems: "center",
+            gridTemplateColumns: `repeat(auto-fill, ${spacing}px)`,
+            gridTemplateRows: `repeat(auto-fill, ${spacing}px)`,
           }}
         >
           {dots.map((dot, index) => {
@@ -201,28 +178,12 @@ export const InteractiveDotGrid = () => {
                 key={dot.id}
                 ref={dotRefs?.current?.[index]}
                 className={styles.dot}
-                style={{
-                  transition:
-                    "transform 1s ease-out, background-color 0.5s ease",
-                }}
               />
             );
           })}
         </div>
 
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "20px",
-            height: "20px",
-            zIndex: 10,
-          }}
-        >
-          Hello
-        </div>
+        <div className={styles.centerStage}>Hello</div>
       </div>
     </div>
   );

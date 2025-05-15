@@ -1,19 +1,22 @@
 import "./App.css";
 import { DotsGrid } from "./dots-grid";
 import { DotsGridWithAnimation } from "./dots-grid-with-animation";
+import { InteractiveDotGrid } from "./interactive-dot-grid";
 
 function App() {
   return (
     <div
       style={{
-        display: "grid",
-        gridTemplateRows: "1fr 1fr",
+        display: "flex",
+        flexDirection: "column",
         height: "100vh",
-        overflow: "scroll",
+        width: "100vw",
+        overflow: "hidden",
       }}
     >
       <DotsGridWithAnimation />
-      <DotsGrid />
+      <InteractiveDotGrid />
+      {/* <DotsGrid /> */}
     </div>
   );
 }
